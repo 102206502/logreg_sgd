@@ -12,8 +12,8 @@ import sklearn.preprocessing
 import matplotlib.pyplot as plt
 
 
-def load_train_test_data(train_ratio=.5):
-    data = pandas.read_csv('./ENB2012_data.csv')
+def load_train_test_data(train_ratio=.8):
+    data = pandas.read_csv('./HTRU2/HTRU_2.csv')
    
     feature_col = ['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8']
     label_col = ['Y1']
@@ -57,7 +57,9 @@ def logreg_sgd(X, y, alpha = .001, iters = 100000, eps=1e-4):
 def predict(X, theta):
     return numpy.dot(X, theta)
 
-# plot the curve of your predict function
+# plot the ROC curve of your prediction
+# x aixes: TPR = TP / ( TP + FN )
+# y aixes: FPR = FP / ( FP + TN ) 
 def plot_roc_curve():
 	pass
 
