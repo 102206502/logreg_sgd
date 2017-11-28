@@ -13,13 +13,16 @@ import matplotlib.pyplot as plt
 
 
 def load_train_test_data(train_ratio=.8):
-    data = pandas.read_csv('./HTRU2/HTRU_2.csv')
-   
-    feature_col = ['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8']
-    label_col = ['Y1']
-    X = data[feature_col]
+    data = pandas.read_csv('./HTRU2/HTRU_2.csv', header=None)
+
+    X = data.iloc[:,:8]
     X = numpy.concatenate((numpy.ones((len(X), 1)), X), axis=1)
-    y = data[label_col]
+    y = data.iloc[:,8]
+    print('X:\n', X)
+    print(X.shape)
+    print('y:\n', y)
+    import pdb; pdb.set_trace()  # breakpoint ee676081 //
+
     return sklearn.model_selection.train_test_split(X, y, test_size = 1 - train_ratio, random_state=0)
 
 
