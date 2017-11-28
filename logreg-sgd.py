@@ -55,7 +55,7 @@ def logreg_sgd(X, y, alpha = .001, iters = 100000, eps=1e-4):
 
 
 def predict(X, theta):
-    return numpy.dot(X, theta)
+    return 1/(1 + numpy.exp((numpy.dot(X, theta)*(-1))))
 
 # plot the ROC curve of your prediction
 # x aixes: TPR = TP / ( TP + FN )
@@ -68,7 +68,7 @@ def main(argv):
     X_train, X_test, y_train, y_test = load_train_test_data(train_ratio=.5)
     X_train_scale, X_test_scale = scale_features(X_train, X_test, 0, 1)
 
-    theta = gradient_descent(X_train_scale, y_train)
+    theta = logreg_sgd(X_train_scale, y_train)
     y_hat = predict(X_train_scale, theta)
     print("Linear train R^2: %f" % (sklearn.metrics.r2_score(y_train, y_hat)))
     y_hat = predict(X_test_scale, theta)
