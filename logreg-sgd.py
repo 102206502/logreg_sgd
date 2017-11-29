@@ -18,9 +18,11 @@ def load_train_test_data(train_ratio=.8):
     X = data.iloc[:,:8]
     X = numpy.concatenate((numpy.ones((len(X), 1)), X), axis=1)
     y = data.iloc[:,8]
+    y = numpy.array(y)
     # print('X:\n', X)
     # print(X.shape)
     # print('y:\n', y)
+    # print('load_train:\ny shape:', y.shape)
     return sklearn.model_selection.train_test_split(X, y, test_size = 1 - train_ratio, random_state=0)
 
 
@@ -31,47 +33,49 @@ def scale_features(X_train, X_test, low=0, upp=1):
     return X_train_scale, X_test_scale
 
 # logreg_sgd with L1 regularization
-def logreg_sgd(X, y, alpha = .001, iters = 100000, eps=1e-4):
+def logreg_sgd(X, y, alpha = .001, iters = 50000, eps=1e-4):
     # TODO: fill this procedure as an exercise
     n, d = X.shape
 
     theta = numpy.zeros((d, 1))
     not_converge = True
     k = 0
-    lam = 0
+    lam = 0.001
 
     while not_converge:
         not_converge = False
         for i in range(n):
             x = X[i, :]
             xT = numpy.transpose([x])
-            print('xT:\n', xT)
-            func_g = numpy.matmul(xT, (sigmoid(x, theta)-y[i+1]))
-            import pdb; pdb.set_trace()  # breakpoint 81437e0a //
+            # print('xT:\n', xT, xT.shape)
+            # print('theta shape', theta.shape)
+            y_hat = 1/(1 + numpy.exp((numpy.dot(x, theta)*(-1))))
+            # print('y_hat:', y_hat)
+            func_g = xT*(y_hat - y[i]) + lam
+            # print('func_g:\n', func_g)
             
-            theta_k = theta
-            theta = theta - alpha*func_g
+            theta_k = theta.copy()
+            theta = theta + alpha*func_g
+            k+=1
         for delta in abs(theta-theta_k):
             if delta > eps:
                 not_converge = True
+
         if k > iters:
             print('k > iters!')
             break
-        k+=1
     # print('theta:\n', theta)
     return theta
 
-def sigmoid(X, theta):
-    y = 1/(1 + numpy.exp((numpy.dot(X, theta)*(-1))))
-    print(y.shape)
-    return y
+def sigmoid():
+    pass
 
-def predict(X, theta):
-    value = sigmoid(X, theta)
-    col, row = X.shape
-    y_hat = numpy.array(row).zeros()
+def predict(X, theta, threshold):
+    value = 1/(1 + numpy.exp((numpy.dot(X, theta)*(-1))))
+    row, col = X.shape
+    y_hat = numpy.zeros(row)
     for i, val in enumerate(value):
-        if val > 0.5:
+        if val > threshold:
             y_hat[i] = 1
         else:
             y_hat[i] = 0
@@ -81,13 +85,26 @@ def predict(X, theta):
 # x aixes: TPR = TP / ( TP + FN )
 # y aixes: FPR = FP / ( FP + TN ) 
 def plot_roc_curve(X_test, y_true, theta):
-    y_pred = predict(X_test, theta)
-    con_matrix = sklearn.metrics.confusion_matrix(y_true, y_pred)
-    print(con_matrix)
+    k = 101
+    TPR_x = numpy.zeros(k)
+    FPR_y = numpy.zeros(k)
+    for n in range(k):
+        threshold = n/k-1
+        y_pred = predict(X_test, theta, threshold)
+        tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true, y_pred).ravel()
+        TPR_x[n] = tp/(tp+fn)
+        FPR_y[n] = fp/(fp+tn)
+        print(tn, fp, fn, tp)
+        print(TPR_x[n], FPR_y[n])
+
+    plt.xlabel('TPR')
+    plt.ylabel('FPR')
+    plt.plot(TPR_x, FPR_y, '-')
+    plt.show()
 
 
 def main(argv):
-    X_train, X_test, y_train, y_test = load_train_test_data(train_ratio=.5)
+    X_train, X_test, y_train, y_test = load_train_test_data(train_ratio=.8)
     X_train_scale, X_test_scale = scale_features(X_train, X_test, 0, 1)
 
     theta = logreg_sgd(X_train_scale, y_train)
