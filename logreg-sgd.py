@@ -33,13 +33,14 @@ def scale_features(X_train, X_test, low=0, upp=1):
     return X_train_scale, X_test_scale
 
 # logreg_sgd with L1 regularization
-def logreg_sgd(X, y, alpha = .001, iters = 50000, eps=1e-4):
+def logreg_sgd(X, y, alpha = .001, iters = 3, eps=1e-4):
     # TODO: fill this procedure as an exercise
     n, d = X.shape
 
     theta = numpy.zeros((d, 1))
     not_converge = True
     k = 0
+    k_old = 0.0
     lam = 0.001
 
     while not_converge:
@@ -49,29 +50,51 @@ def logreg_sgd(X, y, alpha = .001, iters = 50000, eps=1e-4):
             xT = numpy.transpose([x])
             # print('xT:\n', xT, xT.shape)
             # print('theta shape', theta.shape)
-            y_hat = 1/(1 + numpy.exp((numpy.dot(x, theta)*(-1))))
+            y_hat = sigmoid(x, theta)
             # print('y_hat:', y_hat)
-            func_g = xT*(y_hat - y[i]) + lam
-            # print('func_g:\n', func_g)
+            beta = de_norm1(theta)
+
+            func_g = (y[i] - y_hat)*xT + lam*beta
             
             theta_k = theta.copy()
             theta = theta + alpha*func_g
-            k+=1
-        for delta in abs(theta-theta_k):
-            if delta > eps:
-                not_converge = True
+            # print('theta shape:', theta.shape)
+            # print('k:', k)
+            for delta in abs(theta-theta_k):
+                if delta > eps:
+                    not_converge = True
+                    break
 
+        k+=1
+        if (k-k_old)>500:
+        	k_old = k
+        	print('process:', k/iters*100, '%')
         if k > iters:
             print('k > iters!')
             break
     # print('theta:\n', theta)
     return theta
+def de_norm1(theta):
+    d, _ = theta.shape
+    beta = numpy.zeros((d, 1))
 
-def sigmoid():
-    pass
+    for i in range(d):
+        if theta[i,0] < 0:
+            beta[i,0] = -1
+        elif theta[i,0] - 0 < 1e-5:
+            beta[i,0] = 0
+        else:
+            beta[i,0] = 1
+    return beta
+
+def sigmoid(X, theta):
+    z = numpy.dot(X, theta)
+    value = 1.0/(1.0 + numpy.exp(-z))
+    return value
 
 def predict(X, theta, threshold):
-    value = 1/(1 + numpy.exp((numpy.dot(X, theta)*(-1))))
+    value = sigmoid(X, theta)
+    # print('value:\n', value)
     row, col = X.shape
     y_hat = numpy.zeros(row)
     for i, val in enumerate(value):
@@ -85,11 +108,13 @@ def predict(X, theta, threshold):
 # x aixes: TPR = TP / ( TP + FN )
 # y aixes: FPR = FP / ( FP + TN ) 
 def plot_roc_curve(X_test, y_true, theta):
-    k = 101
+    k = 51
     TPR_x = numpy.zeros(k)
     FPR_y = numpy.zeros(k)
+
     for n in range(k):
-        threshold = n/k-1
+        threshold = n/(k-1)
+        # print('threshold=', threshold)
         y_pred = predict(X_test, theta, threshold)
         tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true, y_pred).ravel()
         TPR_x[n] = tp/(tp+fn)
@@ -108,7 +133,10 @@ def main(argv):
     X_train_scale, X_test_scale = scale_features(X_train, X_test, 0, 1)
 
     theta = logreg_sgd(X_train_scale, y_train)
+    print('theta:\n', theta)
     plot_roc_curve(X_test, y_test, theta)
+
+
 
 
 if __name__ == "__main__":
