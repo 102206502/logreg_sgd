@@ -20,10 +20,7 @@ def load_train_test_data(train_ratio=.8):
     X = numpy.concatenate((numpy.ones((len(X), 1)), X), axis=1)
     y = data.iloc[:,8]
     y = numpy.array(y)
-    # print('X:\n', X)
-    # print(X.shape)
-    # print('y:\n', y)
-    # print('load_train:\ny shape:', y.shape)
+    print('the persentage of 1:',sum(y)/len(y))
     return sklearn.model_selection.train_test_split(X, y, test_size = 1 - train_ratio, random_state=0)
 
 
@@ -41,8 +38,9 @@ def logreg_sgd(X, y, alpha = .001, iters = 100000, eps=1e-4):
     k = 0
     lam = 0.001
     not_converge = True
+    delta_y = numpy.zeros(iters)
 
-    for k in range(iters):
+    for k in range(n):
         if not not_converge:
             break
         i = k%n
@@ -53,9 +51,8 @@ def logreg_sgd(X, y, alpha = .001, iters = 100000, eps=1e-4):
         beta = de_norm1(theta)
 
         func_g = (y[i] - y_hat)*xT + lam*beta
-        if i > n-20:
-            print('y_hat:', y_hat, 'y[i]:', y[i])
-            print('y_hat - y[i]:', y_hat - y[i])
+        # delta_y[i] = y[i] - y_hat
+        delta_y[i] = y_hat
         
         theta_k = theta.copy()
         theta = theta + alpha*func_g
@@ -65,6 +62,14 @@ def logreg_sgd(X, y, alpha = .001, iters = 100000, eps=1e-4):
             if delta > eps:
                 converge = False
                 break
+
+    plt.xlabel('n')
+    plt.ylabel('y_hat')
+    x_array = numpy.arange(0, len(delta_y), 1)
+    print(delta_y)
+    plt.scatter(x_array, delta_y, marker='o')
+    plt.show()
+    import pdb; pdb.set_trace()  # breakpoint b9b1a892 //
 
     # print('theta:\n', theta)
     return theta
@@ -113,26 +118,27 @@ def predict(X, y_true, theta, threshold):
 # x aixes: TPR = TP / ( TP + FN )
 # y aixes: FPR = FP / ( FP + TN ) 
 def plot_roc_curve(X_test, y_true, theta):
-    k = 51
+    k = 3
     FPR_x = numpy.zeros(k)
     TPR_y = numpy.zeros(k)
 
     for n in range(k):
         threshold = n/(k-1)
-        # print('threshold=', threshold)
+        print('threshold=', threshold)
         y_pred, FPR, TPR = predict(X_test, y_true, theta, threshold)
-        # tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true, y_pred).ravel()
-        # FPR_x[n] = fp/(fp+tn)
-        # TPR_y[n] = tp/(tp+fn)
-        FPR_x[n] = FPR
-        TPR_y[n] = TPR
-        # print(tn, fp, fn, tp)
+        tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true, y_pred).ravel()
+        FPR_x[n] = fp/(fp+tn)
+        TPR_y[n] = tp/(tp+fn)
+        # FPR_x[n] = FPR
+        # TPR_y[n] = TPR
+        print('acc=', tp/(tn+fp+fn+tp))
+        print(tn, fp, fn, tp)
         print(FPR_x[n], TPR_y[n])
 
     plt.xlabel('FPR')
     plt.ylabel('TPR')
-    plt.plot(FPR_x, TPR_y, '-')
-    # plt.scatter(FPR_x, TPR_y, marker='o', color='blue')
+    # plt.plot(FPR_x, TPR_y, '-')
+    plt.scatter(FPR_x, TPR_y, marker='o', color='blue')
     plt.show()
 
 def plot_sigmoid(X, theta, y_true=None):
