@@ -121,44 +121,41 @@ def sigmoid(X, theta):
     value = 1.0/(1.0 + numpy.exp(-z))
     return value
 
-def predict(X, y_true, theta, threshold):
+def predict(X, y_true, y_scores, threshold):
     n = X.shape[0]
-    value = numpy.squeeze(sigmoid(X, theta))
     
-    '''x_axis = numpy.arange(len(value))
+    '''x_axis = numpy.arange(len(y_scores))
     print(x_axis.shape)
-    print(value.shape)
-    # plt.scatter(x_axis, y_true-value, color='blue')
-    for item in y_true-value:
+    print(y_scores.shape)
+    # plt.scatter(x_axis, y_true-y_scores, color='blue')
+    for item in y_true-y_scores:
         if item < -1e-1:
             print('FP!')
         else:
             print('no')
-    # plt.scatter(x_axis, value, color='blue')
+    # plt.scatter(x_axis, y_scores, color='blue')
     # plt.scatter(x_axis, y_true, color='red', marker='x')
     # plt.show()
     '''
 
-    # print('value:\n', value)
     y_predict = numpy.zeros(n)
     P = sum(y_true)
     N = n - P
 
 
-    for i, val in enumerate(value):
-        if val > threshold:
+    for i, score in enumerate(y_scores):
+        if score > threshold:
             y_predict[i] = 1
-            # if threshold > 0.3:
-            #     print('val, threshold', val, threshold)
-            #     print('true val', y_true[i])
+            # print('score, threshold', score, threshold)
+            # print('true score', y_true[i])
         else:
             y_predict[i] = 0
+    FP, TP, FN, TN = confusion_matrix_values(y_predict, y_true)
     # print('FP, TP, FN, TN')
     # print(FP, TP, FN, TN)
-    FP, TP, FN, TN = confusion_matrix_values(y_predict, y_true)
     FPR = FP/N
     TPR = TP/P
-    # print('FPR, TPR', FPR, TPR)
+    print('FPR, TPR', FPR, TPR)
     return y_predict, FPR, TPR
 
 def confusion_matrix_values(y_predict, y_true):
@@ -178,7 +175,7 @@ def confusion_matrix_values(y_predict, y_true):
             # print('False part')
             if y_true[i] <= 0:
                 FP+=1
-                print('i=', i)
+                # print('i=', i)
             else:
                 FN+=1
     assert(FP+TP+FN+TN == len(y_predict))
@@ -188,22 +185,23 @@ def confusion_matrix_values(y_predict, y_true):
 # x aixes: TPR = TP / ( TP + FN )
 # y aixes: FPR = FP / ( FP + TN ) 
 def plot_roc_curve(X_test, y_true, theta):
-    k = 31
-    FPR_x = numpy.zeros(k)
-    TPR_y = numpy.zeros(k)
-
-    for n in range(k):
-        threshold = n/(k-1)
-        # print('threshold=', threshold)
-        y_pred, FPR, TPR = predict(X_test, y_true, theta, threshold)
+    scores = numpy.squeeze(sigmoid(X_test, theta))
+    k = 10
+    threshold = numpy.arange(0, 1, 1./k)
+    threshold = numpy.append(threshold, [1.])
+    FPR_x = numpy.zeros(len(threshold))
+    TPR_y = numpy.zeros(len(threshold))
+    for n in range(len(threshold)):
+        y_pred, FPR, TPR = predict(X_test, y_true, scores, threshold[n])
         FPR_x[n] = FPR
         TPR_y[n] = TPR
+        print(threshold[n])
 
     plt.xlabel('FPR')
     plt.ylabel('TPR')
     plt.plot(FPR_x, TPR_y)
     plt.scatter(FPR_x, TPR_y, marker='o', color='blue')
-    plt.show()
+    # plt.show()
 
 def main(argv):
     X_train, X_test, y_train, y_test = load_train_test_data(train_ratio=.8)
