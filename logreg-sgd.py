@@ -139,8 +139,6 @@ def predict(X, y_true, y_scores, threshold):
     '''
 
     y_predict = numpy.zeros(n)
-    P = sum(y_true)
-    N = n - P
 
 
     for i, score in enumerate(y_scores):
@@ -186,22 +184,31 @@ def confusion_matrix_values(y_predict, y_true):
 # y aixes: FPR = FP / ( FP + TN ) 
 def plot_roc_curve(X_test, y_true, theta):
     scores = numpy.squeeze(sigmoid(X_test, theta))
-    k = 10
-    threshold = numpy.arange(0, 1, 1./k)
-    threshold = numpy.append(threshold, [1.])
-    FPR_x = numpy.zeros(len(threshold))
-    TPR_y = numpy.zeros(len(threshold))
-    for n in range(len(threshold)):
-        y_pred, FPR, TPR = predict(X_test, y_true, scores, threshold[n])
-        FPR_x[n] = FPR
-        TPR_y[n] = TPR
-        print(threshold[n])
+    scores_decent_ord = numpy.argsort(scores)[::-1]
+    scores = scores[scores_decent_ord]
+    y_true = y_true[scores_decent_ord]
+    
+    FPR_x = numpy.zeros(len(y_true)+1)
+    TPR_y = numpy.zeros(len(y_true)+1)
+    P = sum(y_true)
+    N = len(y_true) - P
+    FP = .0
+    TP = .0
+    for i, target in enumerate(y_true):
+        if target >= 1:
+            TP+=1
+        else:
+            FP+=1
+        FPR_x[i] = FP/N
+        TPR_y[i] = TP/P
 
+    FPR_x[-1] = .0
+    TPR_y[-1] = .0
     plt.xlabel('FPR')
     plt.ylabel('TPR')
     plt.plot(FPR_x, TPR_y)
-    plt.scatter(FPR_x, TPR_y, marker='o', color='blue')
-    # plt.show()
+    # plt.scatter(FPR_x, TPR_y, marker='o', color='blue')
+    plt.show()
 
 def main(argv):
     X_train, X_test, y_train, y_test = load_train_test_data(train_ratio=.8)
